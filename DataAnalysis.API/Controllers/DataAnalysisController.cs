@@ -12,11 +12,7 @@ namespace DataAnalysis.API.Controllers
     public class DataAnalysisController : ControllerBase
     {
 
-        private const string DataUrl = "https://example.com/financial-data";
         private readonly ILogger<DataAnalysisController> _logger;
-        //private string filePath = Path.Combine(AppContext.BaseDirectory, "stock_prices_latest.xlsx");
-        string filePath = @"C:\Users\manu\source\repos\DataAnalysis.API\DataAnalysis.API\stock_prices_latest.xlsx";
-
         private readonly IStockAnalysisLogic _stockAnalysisLogic;
         public DataAnalysisController(ILogger<DataAnalysisController> logger, IStockAnalysisLogic stockAnalysisLogic)
         {
