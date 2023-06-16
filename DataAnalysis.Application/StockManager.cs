@@ -11,7 +11,7 @@ namespace FinancialAnalysis.API.Logic
     public class StockAnalysisLogic : IStockAnalysisLogic
     {//private string filePath = Path.Combine(AppContext.BaseDirectory, "stock_prices_latest.xlsx");
         string filePath = @"C:\Users\manu\source\repos\DataAnalysis.API\DataAnalysis.API\stock_prices_latest.xlsx";
-        private readonly List<Stock> stocks;
+        private List<Stock> stocks;
 
         public StockAnalysisLogic()
         {
@@ -21,6 +21,7 @@ namespace FinancialAnalysis.API.Logic
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial; // Assuming you are using EPPlus in a non-commercial project
 
             FileInfo fileInfo = new FileInfo(filePath);
+            List<Stock> stock1 = new List<Stock>(); 
 
             using (ExcelPackage package = new ExcelPackage(fileInfo))
             {
@@ -31,8 +32,12 @@ namespace FinancialAnalysis.API.Logic
 
                 for (int row = 2; row <= rowCount; row++) // Start from row 2 to skip the header
                 {
+                    DateTime dateTime;
+                    var time = worksheet.Cells[row, 2].Value?.ToString();
+                    string dateString = worksheet.Cells[row, 2].Value?.ToString();
+                    string format = "dd-MMM-yy hh:mm:ss tt";
+                    DateTime date = DateTime.ParseExact(dateString, format, CultureInfo.InvariantCulture);
                     string ticker = worksheet.Cells[row, 1].Value?.ToString();
-                    DateTime date = DateTime.ParseExact(worksheet.Cells[row, 2].Value?.ToString(), "dd-MM-yy", CultureInfo.InvariantCulture);
                     double open = Convert.ToDouble(worksheet.Cells[row, 3].Value);
                     double high = Convert.ToDouble(worksheet.Cells[row, 4].Value);
                     double low = Convert.ToDouble(worksheet.Cells[row, 5].Value);
@@ -40,17 +45,10 @@ namespace FinancialAnalysis.API.Logic
                     double volume = Convert.ToDouble(worksheet.Cells[row, 7].Value);
 
                     Stock stock = new Stock(ticker, date, open, high, low, close, volume);
-                    stocks.Add(stock);
+                    stock1.Add(stock);
+                    stocks = stock1;
                 }
             }
-            // Sample data
-            //stocks = new List<Stock>
-            //{
-            //    new Stock("MSFT", new DateTime(2016, 5, 16), 50.8, 51.96, 50.75, 51.83, 20032017),
-            //    new Stock("ATTU", new DateTime(2016, 1, 2), 68.85, 69.84, 67.85, 67.87, 30977700),
-            //    new Stock("ATU", new DateTime(2018, 9, 1), 53.41, 55, 53.17, 54.32, 41591300),
-            //    // Add more stocks here...
-            //};
         }
 
         public List<Stock> GetStockData()
@@ -68,44 +66,49 @@ namespace FinancialAnalysis.API.Logic
             }
         }
 
-        //public Dictionary<string, double> CalculateVolatility(List<Stock> stocks)
-        //{
-        //    Dictionary<string, double> volatilityData = new Dictionary<string, double>();
+        public Dictionary<string, double> CalculateVolatility(List<Stock> stocks)
+        {
+            Dictionary<string, double> volatilityData = new Dictionary<string, double>();
 
-        //    foreach (var stock in stocks)
-        //    {
-        //        double[] stockReturns = stock.Returns.ToArray();
-        //        double volatility = CalculateStandardDeviation(stockReturns);
-        //        volatilityData.Add(stock.Ticker, volatility);
-        //    }
+            foreach (var stock in stocks)
+            {
+                List<double> stockReturns = new List<double>() ;
+                stockReturns.Add(stock.Returns);
+                double volatility = CalculateStandardDeviation(stockReturns.ToArray());
+                volatilityData.Add(stock.Ticker, volatility);
+            }
 
-        //    return volatilityData;
-        //}
+            return volatilityData;
+        }
 
-        //public Dictionary<string, Dictionary<string, double>> CalculateCorrelations(List<Stock> stocks)
-        //{
-        //    Dictionary<string, Dictionary<string, double>> correlationData = new Dictionary<string, Dictionary<string, double>>();
 
-        //    foreach (var stock1 in stocks)
-        //    {
-        //        Dictionary<string, double> correlations = new Dictionary<string, double>();
+        public Dictionary<string, Dictionary<string, double>> CalculateCorrelations(List<Stock> stocks)
+        {
+            Dictionary<string, Dictionary<string, double>> correlationData = new Dictionary<string, Dictionary<string, double>>();
 
-        //        foreach (var stock2 in stocks)
-        //        {
-        //            if (stock1.Ticker != stock2.Ticker)
-        //            {
-        //                double[] returns1 = stock1.Returns.ToArray();
-        //                double[] returns2 = stock2.Returns.ToArray();
-        //                double correlation = CalculateCorrelation(returns1, returns2);
-        //                correlations.Add(stock2.Ticker, correlation);
-        //            }
-        //        }
+            foreach (var stock1 in stocks)
+            {
+                Dictionary<string, double> correlations = new Dictionary<string, double>();
 
-        //        correlationData.Add(stock1.Ticker, correlations);
-        //    }
+                foreach (var stock2 in stocks)
+                {
+                    if (stock1.Ticker != stock2.Ticker)
+                    {
+                        List<double> returns1 = new List<double>();
+                        List<double> returns2 = new List<double>();
+                        returns1.Add(stock1.Returns);
+                        returns2.Add(stock2.Returns);
+                        double correlation = CalculateCorrelation(returns1.ToArray(), returns2.ToArray());
+                        correlations.Add(stock2.Ticker, correlation);
+                    }
+                }
 
-        //    return correlationData;
-        //}
+                correlationData.Add(stock1.Ticker, correlations);
+            }
+
+            return correlationData;
+        }
+
 
         public List<Stock> FilterByTimePeriod(List<Stock> stocks, DateTime startDate, DateTime endDate)
         {
